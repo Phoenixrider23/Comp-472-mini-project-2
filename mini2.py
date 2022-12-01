@@ -1,5 +1,6 @@
 import copy
 from array import *
+from queue import PriorityQueue
 
 # <= is \u2190
 # ^ is \u2191
@@ -211,3 +212,37 @@ new_state = state(None)
 new_state.read_input_string(test_puzzle)
 new_state.print_cars()
 new_state.check_moves()
+
+
+# Node class: state is state of board, level is depth, f is the heuristic value
+
+class Node:
+    def __init__(self, parent, child, state, level, f):
+        self.parent = parent
+        self.child = child
+        self.state = state
+        self.level = level
+        self.f = f
+
+class aStar:
+    def a_star_search(state, start, goal):  # start node and goal node
+        pq = PriorityQueue()
+        pq.put(0, start)
+        origin = dict()
+        cost = dict()
+        origin[start] = None
+        cost[start] = 0
+
+        while not pq.empty():
+            current = pq.get()
+
+            if current == goal:
+                break
+            for next in state.neighbors(current):
+                updated_cost = cost[current] + state.cost(current, next)
+                if next not in cost or updated_cost < cost[next]:
+                    cost[next] = updated_cost
+                    # have to implement heuristic funct
+
+    def neighbors(self, current):
+        pass
