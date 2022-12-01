@@ -1,213 +1,455 @@
-import copy
-from array import *
-
-# <= is \u2190
-# ^ is \u2191
-# => is \u2192
-# v is \u2193
-
-previously_found_states = {}
-
-empty_board = [['.','.','.','.','.','.'],
-            ['.','.','.','.','.','.'],
-            ['.','.','.','.','.','.'],
-            ['.','.','.','.','.','.'],
-            ['.','.','.','.','.','.'],
-            ['.','.','.','.','.','.']]
-
-
-def board_matrix_to_string(board_matrix):
-    board_string = ""
-    for i in range(len(board_matrix)):
-        for j in range(len(board_matrix[i])):
-            board_string += board_matrix[i][j]
-    return board_string
-
-class car:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.length = 1
-        self.horizontal = False
-        self.gas = 99
-    
-    def update(self, new_horizontal):
-        self.length += 1
-        self.horizontal = new_horizontal
-    
-    def set_gas(self, gas):
-        self.gas = gas
-
-
-
-class state:
-    def __init__(self, previous_move):
-        self.move_number = 0
-        self.previous_move = previous_move
-        self.moves_that_got_us_there = ""
-        self.possible_future_moves = {}
-        self.exit = [2, 5]
-        self.cars = {}
-        self.board_string = ""
-        self.board_matrix = copy.deepcopy(empty_board)
-
-
-    def update_new_state(self, move_number, moves_that_got_us_there, cars, board_string, board_matrix):
-        self.move_number = move_number
-        self.moves_that_got_us_there = moves_that_got_us_there
-        self.cars = cars
-        self.board_matrix = board_matrix
-        self.board_string = board_string
-
-
-    def read_input_string(self, state_string):
-        param = state_string.split(' ')
-        for j in range(len(param)):
-            if j == 0:
-                self.board_string = param[0]
-                for i in range(len(param[0])):
-                    id = state_string[i]
-                    x = i % 6
-                    y = i // 6
-                    self.board_matrix[y][x] = id
-                    if (id != '.') and not(id in self.cars):
-                        new_car = car(x, y)
-                        self.cars[id] = new_car
-                    elif (id in self.cars):
-                        horizontal = (previous_character == id)
-                        self.cars[id].update(horizontal)
-                    previous_character = id
-            else:
-                car_id = param[j][0]
-                gas_value = int(param[j][1])
-                self.cars[car_id].set_gas(gas_value)
-        print(self.board_matrix)
-
-
-    def print_cars(self):
-        for car in self.cars:
-            print(car + 
-                    "= x: " + str(self.cars[car].x) + 
-                    ", y: " + str(self.cars[car].y) + 
-                    ", length: " + str(self.cars[car].length) +
-                    ", horizontal: " + str(self.cars[car].horizontal) + 
-                    ", gas: " + str(self.cars[car].gas))
-
-
-    def next_board_no_exit(self, car_id, gas_remaining, new_x, new_y):
-        next_board_cars = copy.deepcopy(self.cars)
-        next_board_cars[car_id].x = new_x
-        next_board_cars[car_id].y = new_y
-        next_board_cars[car_id].gas = gas_remaining
-        return next_board_cars
-
-
-    def next_board_with_exit(self, car_id):
-        next_board_cars = copy.deepcopy(self.cars)
-        next_board_cars.pop(car_id)
-        return next_board_cars
-
-
-    def next_state_creation(self, next_board_cars, move):
-        board_string = ""
-        board_matrix = copy.deepcopy(empty_board)
-
-        for car in next_board_cars:
-            if next_board_cars[car].horizontal == True:
-                for i in range(next_board_cars[car].length):
-                    board_matrix[next_board_cars[car].y][next_board_cars[car].x + i] = car
-            else:
-                for i in range(next_board_cars[car].length):
-                    board_matrix[next_board_cars[car].y + i][next_board_cars[car].x] = car
-
-        board_string = board_matrix_to_string(board_matrix)
-
-        if not(board_string in previously_found_states) or (previously_found_states[board_string].move_number > (self.move_number + 1)):
-            move_sequence = ""
-            if self.moves_that_got_us_there == "":
-                move_sequence = move
-            else: move_sequence = self.moves_that_got_us_there + "; " + move
-
-            new_state = state(self)
-            new_state.update_new_state(self.move_number + 1, move_sequence, next_board_cars, board_string, board_matrix)
-            self.possible_future_moves[move] = new_state
-            previously_found_states[board_string] = new_state
-
-
-    def check_moves(self):
-        for car in self.cars:
-            move = ""
-            if self.cars[car].horizontal == True:
-                # check right
-                check = self.cars[car].x + self.cars[car].length
-                blocked = False
-                gas = copy.deepcopy(self.cars[car].gas)
-                while (check < 5 and blocked == False and gas > 0):
-                    check += 1
-                    if self.board_matrix[self.cars[car].y][check] == '.':
-                        gas -= 1
-                        move = car + " \u2192 " + str(check - self.cars[car].x - self.cars[car].length)
-                        print(move)
-                        # special case where car leaves parking
-                        if [self.cars[car].y, check] == self.exit:
-                            if car == "A":
-                                print("Solution found!")
-                                next_board_cars = self.next_board_with_exit(car)
-                                self.next_state_creation(next_board_cars, move)
-                                print(self.possible_future_moves[move].moves_that_got_us_there)
-                            else:
-                                next_board_cars = self.next_board_with_exit(car)
-                                self.next_state_creation(next_board_cars, move)
-                        else:
-                            next_board_cars = self.next_board_no_exit(car, gas, check, self.cars[car].y)
-                            self.next_state_creation(next_board_cars, move)
-                    else: blocked = True
-
-                # check left
-                check = self.cars[car].x
-                blocked = False
-                gas = copy.deepcopy(self.cars[car].gas)
-                while (check > 0 and blocked == False):
-                    check -= 1
-                    if self.board_matrix[self.cars[car].y][check] == '.':
-                        move = car + " \u2190 " + str(self.cars[car].x - check)
-                        gas -= 1
-                        next_board_cars = self.next_board_no_exit(car, gas, check, self.cars[car].y)
-                        self.next_state_creation(next_board_cars, move)
-                    else: blocked = True
-            # car is vertical
-            else:
-                # check above
-                check = self.cars[car].y + self.cars[car].length
-                blocked = False
-                gas = copy.deepcopy(self.cars[car].gas)
-                while (check < 5 and blocked == False and gas > 0):
-                    check += 1
-                    if self.board_matrix[check][self.cars[car].x] == '.':
-                        move = car + " \u2191 " + str(self.cars[car].y - check)
-                        gas -= 1
-                        next_board_cars = self.next_board_no_exit(car, gas, self.cars[car].x, check)
-                        self.next_state_creation(next_board_cars, move)
-                    else: blocked = True
-
-                # check below
-                check = self.cars[car].y
-                blocked = False
-                gas = copy.deepcopy(self.cars[car].gas)
-                while (check > 0 and blocked == False and gas > 0):
-                    check -= 1
-                    if self.board_matrix[check][self.cars[car].x] == '.':
-                        move = car + " \u2193 " + str(check - self.cars[car].y)
-                        gas -= 1
-                        next_board_cars = self.next_board_no_exit(car, gas, self.cars[car].x, check)
-                        self.next_state_creation(next_board_cars, move)
-                    else: blocked = True
-
-
-
-test_puzzle = "............AA......................"
-
-new_state = state(None)
-new_state.read_input_string(test_puzzle)
-new_state.print_cars()
-new_state.check_moves()
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyNlwAGVlf+kBgtVS33xnQKg",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Phoenixrider23/Comp-472-mini-project-2/blob/kes-branch/mini2.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#rush hour:\n",
+        "#imports\n",
+        "import copy\n",
+        "from array import *\n",
+        "from timeit import default_timer as timer\n",
+        "from queue import PriorityQueue\n",
+        "import numpy as np"
+      ],
+      "metadata": {
+        "id": "qVgLmbl8Zmi4"
+      },
+      "execution_count": 280,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#board:\n",
+        "\n",
+        "# <= is \\u2190\n",
+        "# ^ is \\u2191\n",
+        "# => is \\u2192\n",
+        "# v is \\u2193\n",
+        "\n",
+        "previously_found_states = {}\n",
+        "\n",
+        "empty_board = [['.','.','.','.','.','.'],\n",
+        "            ['.','.','.','.','.','.'],\n",
+        "            ['.','.','.','.','.','.'],\n",
+        "            ['.','.','.','.','.','.'],\n",
+        "            ['.','.','.','.','.','.'],\n",
+        "            ['.','.','.','.','.','.']]\n",
+        "\n",
+        "def board_matrix_to_string(board_matrix):\n",
+        "    board_string = \"\"\n",
+        "    for i in range(len(board_matrix)):\n",
+        "        for j in range(len(board_matrix[i])):\n",
+        "            board_string += board_matrix[i][j]\n",
+        "    return board_string"
+      ],
+      "metadata": {
+        "id": "v2UhAnCoZv9-"
+      },
+      "execution_count": 281,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#alternate board using numpy if needed else delete\n",
+        "class Board:\n",
+        "  #function:\n",
+        "    #parametrised constructor\n",
+        "    def __init__(self):\n",
+        "      #generate a 6 x 6 matrices (manually or dynamically)\n",
+        "      #manually\n",
+        "      self.board = np.array([['.','.','.','.','.','.'],\n",
+        "                   ['.','.','.','.','.','.'],\n",
+        "                   ['.','.','.','.','.','.'],\n",
+        "                   ['.','.','.','.','.','.'],\n",
+        "                   ['.','.','.','.','.','.'],\n",
+        "                   ['.','.','.','.','.','.']])\n",
+        "    \n",
+        "    #copy constructor\n",
+        "    def copy(self):\n",
+        "      cop = copy.deepcopy(Board)\n",
+        "\n",
+        "def board_matrix_to_string(board_matrix):\n",
+        "    board_string = \"\"\n",
+        "    for i in range(len(board_matrix)):\n",
+        "        for j in range(len(board_matrix[i])):\n",
+        "            board_string += board_matrix[i][j]\n",
+        "    return board_string"
+      ],
+      "metadata": {
+        "id": "p6NO-PVbswLZ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 282,
+      "metadata": {
+        "id": "upzpqDLJZelv"
+      },
+      "outputs": [],
+      "source": [
+        "#car class\n",
+        "class car:\n",
+        "    def __init__(self, x, y):\n",
+        "        self.x = x\n",
+        "        self.y = y\n",
+        "        self.length = 1\n",
+        "        self.horizontal = False\n",
+        "        self.gas = 99\n",
+        "    \n",
+        "    def update(self, new_horizontal):\n",
+        "        self.length += 1\n",
+        "        self.horizontal = new_horizontal\n",
+        "    \n",
+        "    def set_gas(self, gas):\n",
+        "        self.gas = gas"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#write to file function\n",
+        "def write(filename,solution):\n",
+        "  file = open(filename, \"a\")\n",
+        "  file.write(solution)\n",
+        "  file.write(\" \")\n",
+        "  file.close()"
+      ],
+      "metadata": {
+        "id": "9-vyEnUcRtW6"
+      },
+      "execution_count": 283,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#priority queue function\n",
+        "def storeSP(move):\n",
+        "  solutionPath = PriorityQueue()\n",
+        "  solutionPath.put(move)\n",
+        "  while not solutionPath.empty():\n",
+        "    write(\"solution.txt\", solutionPath.get())\n",
+        "    #print(solutionPath.get())"
+      ],
+      "metadata": {
+        "id": "T50TwzJYV2L2"
+      },
+      "execution_count": 284,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#path length\n",
+        "def pathLength(count):\n",
+        "  write(\"solution.txt\", \"The path lenght is: \")\n",
+        "  write(\"solution.txt\", count)"
+      ],
+      "metadata": {
+        "id": "oZUNKfsp0l0h"
+      },
+      "execution_count": 285,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#old UCS function using queue\n",
+        "#def UCS(end, start):\n",
+        "#  #global variables\n",
+        "#  global board, gas\n",
+        "#  #path to store the UCS\n",
+        "#  path = []\n",
+        "#  #queue\n",
+        "#  sol = []\n",
+        "#  #set the initial value of the queue\n",
+        "#  sol.append([0, start])\n",
+        "#  #previously visited elements\n",
+        "#  seen = {}\n",
+        "#  #while the queue isnt empty\n",
+        "#  while (len(sol)>0):\n",
+        "#    #top element of the queue\n",
+        "#    sol = sorted(sol)\n",
+        "#    element = sol[-1]\n",
+        "#    del sol[-1]\n",
+        "#    #check if element in the path of the goal\n",
+        "#    element[0]*=-1\n",
+        "#    if(element[1] in end):\n",
+        "#      position = end.position(element[1])\n",
+        "#      del sol[-1]\n",
+        "#    #check if the path havent been verified and accessible\n",
+        "#    if(element[1] not in seen):\n",
+        "#      for i  in range(len(board[element[1]])):\n",
+        "#        #put the least priority at the top\n",
+        "#        sol.append([(element[0]+gas[(element[1], board[element[1]][i])])*-1, board[element[1]][i]])\n",
+        "#    seen[element[1]] = 1\n",
+        "#  return path"
+      ],
+      "metadata": {
+        "id": "lZjICqHtVhk-"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#main\n",
+        "class state:\n",
+        "    def __init__(self, previous_move):\n",
+        "        self.move_number = 0\n",
+        "        self.previous_move = previous_move\n",
+        "        self.moves_that_got_us_there = \"\"\n",
+        "        self.possible_future_moves = {}\n",
+        "        self.start = [2, 0]\n",
+        "        self.exit = [2, 5]\n",
+        "        self.cars = {}\n",
+        "        self.board_string = \"\"\n",
+        "        self.board_matrix = copy.deepcopy(empty_board)\n",
+        "\n",
+        "\n",
+        "    def update_new_state(self, move_number, moves_that_got_us_there, cars, board_string, board_matrix):\n",
+        "        self.move_number = move_number\n",
+        "        self.moves_that_got_us_there = moves_that_got_us_there\n",
+        "        self.cars = cars\n",
+        "        self.board_matrix = board_matrix\n",
+        "        self.board_string = board_string\n",
+        "\n",
+        "\n",
+        "    def read_input_string(self, state_string):\n",
+        "        param = state_string.split(' ')\n",
+        "        for j in range(len(param)):\n",
+        "            if j == 0:\n",
+        "                self.board_string = param[0]\n",
+        "                for i in range(len(param[0])):\n",
+        "                    id = state_string[i]\n",
+        "                    x = i % 6\n",
+        "                    y = i // 6\n",
+        "                    self.board_matrix[y][x] = id\n",
+        "                    if (id != '.') and not(id in self.cars):\n",
+        "                        new_car = car(x, y)\n",
+        "                        self.cars[id] = new_car\n",
+        "                    elif (id in self.cars):\n",
+        "                        horizontal = (previous_character == id)\n",
+        "                        self.cars[id].update(horizontal)\n",
+        "                    previous_character = id\n",
+        "            else:\n",
+        "                car_id = param[j][0]\n",
+        "                gas_value = int(param[j][1])\n",
+        "                self.cars[car_id].set_gas(gas_value)\n",
+        "        print(self.board_matrix)\n",
+        "\n",
+        "\n",
+        "    def print_cars(self):\n",
+        "        for car in self.cars:\n",
+        "            print(car + \n",
+        "                    \"= x: \" + str(self.cars[car].x) + \n",
+        "                    \", y: \" + str(self.cars[car].y) + \n",
+        "                    \", length: \" + str(self.cars[car].length) +\n",
+        "                    \", horizontal: \" + str(self.cars[car].horizontal) + \n",
+        "                    \", gas: \" + str(self.cars[car].gas))\n",
+        "\n",
+        "\n",
+        "    def next_board_no_exit(self, car_id, gas_remaining, new_x, new_y):\n",
+        "        next_board_cars = copy.deepcopy(self.cars)\n",
+        "        next_board_cars[car_id].x = new_x\n",
+        "        next_board_cars[car_id].y = new_y\n",
+        "        next_board_cars[car_id].gas = gas_remaining\n",
+        "        return next_board_cars\n",
+        "\n",
+        "\n",
+        "    def next_board_with_exit(self, car_id):\n",
+        "        next_board_cars = copy.deepcopy(self.cars)\n",
+        "        next_board_cars.pop(car_id)\n",
+        "        return next_board_cars\n",
+        "\n",
+        "\n",
+        "    def next_state_creation(self, next_board_cars, move):\n",
+        "        board_string = \"\"\n",
+        "        board_matrix = copy.deepcopy(empty_board)\n",
+        "\n",
+        "        for car in next_board_cars:\n",
+        "            if next_board_cars[car].horizontal == True:\n",
+        "                for i in range(next_board_cars[car].length):\n",
+        "                    board_matrix[next_board_cars[car].y][next_board_cars[car].x + i] = car\n",
+        "            else:\n",
+        "                for i in range(next_board_cars[car].length):\n",
+        "                    board_matrix[next_board_cars[car].y + i][next_board_cars[car].x] = car\n",
+        "\n",
+        "        board_string = board_matrix_to_string(board_matrix)\n",
+        "\n",
+        "        if not(board_string in previously_found_states) or (previously_found_states[board_string].move_number > (self.move_number + 1)):\n",
+        "            move_sequence = \"\"\n",
+        "            if self.moves_that_got_us_there == \"\":\n",
+        "                move_sequence = move\n",
+        "            else: move_sequence = self.moves_that_got_us_there + \"; \" + move\n",
+        "\n",
+        "            new_state = state(self)\n",
+        "            new_state.update_new_state(self.move_number + 1, move_sequence, next_board_cars, board_string, board_matrix)\n",
+        "            self.possible_future_moves[move] = new_state\n",
+        "            previously_found_states[board_string] = new_state\n",
+        "\n",
+        "\n",
+        "    def check_moves(self):\n",
+        "\n",
+        "        for car in self.cars:\n",
+        "            move = \"\"\n",
+        "            if self.cars[car].horizontal == True:\n",
+        "                # check right\n",
+        "                check = self.cars[car].x + self.cars[car].length\n",
+        "                blocked = False\n",
+        "                gas = copy.deepcopy(self.cars[car].gas)\n",
+        "                #write the solution path\n",
+        "                write(\"solution.txt\", \"Solution path: \")\n",
+        "                while (check < 5 and blocked == False and gas > 0):\n",
+        "                    check += 1\n",
+        "                    if self.board_matrix[self.cars[car].y][check] == '.':\n",
+        "                        gas -= 1\n",
+        "                        move = car + \" \\u2192 \" + str(check - self.cars[car].x - self.cars[car].length)\n",
+        "                        #store the solution path in a priority queue\n",
+        "                        storeSP(move)\n",
+        "                        print(move)\n",
+        "                        # special case where car leaves parking\n",
+        "                        if [self.cars[car].y, check] == self.exit:\n",
+        "                            if car == \"A\":\n",
+        "                                print(\"Solution found!\")                               \n",
+        "                                next_board_cars = self.next_board_with_exit(car)\n",
+        "                                self.next_state_creation(next_board_cars, move)\n",
+        "                                print(self.possible_future_moves[move].moves_that_got_us_there)\n",
+        "                                #count the cost of move to goal\n",
+        "                                write(\"solution.txt\", '\\n')\n",
+        "                                pathLength(move)\n",
+        "                            else:\n",
+        "                                next_board_cars = self.next_board_with_exit(car)\n",
+        "                                self.next_state_creation(next_board_cars, move)\n",
+        "                        else:\n",
+        "                            next_board_cars = self.next_board_no_exit(car, gas, check, self.cars[car].y)\n",
+        "                            self.next_state_creation(next_board_cars, move)\n",
+        "                    else: blocked = True\n",
+        "\n",
+        "                # check left\n",
+        "                check = self.cars[car].x\n",
+        "                blocked = False\n",
+        "                gas = copy.deepcopy(self.cars[car].gas)\n",
+        "                while (check > 0 and blocked == False):\n",
+        "                    check -= 1\n",
+        "                    if self.board_matrix[self.cars[car].y][check] == '.':\n",
+        "                        move = car + \" \\u2190 \" + str(self.cars[car].x - check)\n",
+        "                        gas -= 1\n",
+        "                        next_board_cars = self.next_board_no_exit(car, gas, check, self.cars[car].y)\n",
+        "                        self.next_state_creation(next_board_cars, move)\n",
+        "                    else: blocked = True\n",
+        "\n",
+        "            # car is vertical\n",
+        "            else:\n",
+        "                # check above\n",
+        "                check = self.cars[car].y + self.cars[car].length\n",
+        "                blocked = False\n",
+        "                gas = copy.deepcopy(self.cars[car].gas)\n",
+        "                while (check < 5 and blocked == False and gas > 0):\n",
+        "                    check += 1\n",
+        "                    if self.board_matrix[check][self.cars[car].x] == '.':\n",
+        "                        move = car + \" \\u2191 \" + str(self.cars[car].y - check)\n",
+        "                        gas -= 1\n",
+        "                        next_board_cars = self.next_board_no_exit(car, gas, self.cars[car].x, check)\n",
+        "                        self.next_state_creation(next_board_cars, move)\n",
+        "                    else: blocked = True\n",
+        "\n",
+        "                # check below\n",
+        "                check = self.cars[car].y\n",
+        "                blocked = False\n",
+        "                gas = copy.deepcopy(self.cars[car].gas)\n",
+        "                while (check > 0 and blocked == False and gas > 0):\n",
+        "                    check -= 1\n",
+        "                    if self.board_matrix[check][self.cars[car].x] == '.':\n",
+        "                        move = car + \" \\u2193 \" + str(check - self.cars[car].y)\n",
+        "                        gas -= 1\n",
+        "                        next_board_cars = self.next_board_no_exit(car, gas, self.cars[car].x, check)\n",
+        "                        self.next_state_creation(next_board_cars, move)\n",
+        "                    else: blocked = True"
+      ],
+      "metadata": {
+        "id": "KS6_KS7vZ_k8"
+      },
+      "execution_count": 286,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#testing\n",
+        "test_puzzle = \"............AA......................\"\n",
+        "\n",
+        "#start the timer\n",
+        "start = timer()\n",
+        "\n",
+        "new_state = state(None)\n",
+        "new_state.read_input_string(test_puzzle)\n",
+        "new_state.print_cars()\n",
+        "new_state.check_moves()\n",
+        "\n",
+        "#end of the timer\n",
+        "end = timer()\n",
+        "print(\"Runtime:\", round((end - start),3), \"seconds\")\n",
+        "write(\"solution.txt\", '\\n')\n",
+        "write(\"solution.txt\", \"Runtime:\")\n",
+        "write(\"solution.txt\", str(round((end - start),3)))\n",
+        "write(\"solution.txt\", \"seconds\")"
+      ],
+      "metadata": {
+        "id": "Vcl4B8YxkJ7E",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "ff90305d-cf49-40fb-b669-740613531cb7"
+      },
+      "execution_count": 287,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "[['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['A', 'A', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.'], ['.', '.', '.', '.', '.', '.']]\n",
+            "A= x: 0, y: 2, length: 2, horizontal: True, gas: 99\n",
+            "A → 1\n",
+            "A → 2\n",
+            "A → 3\n",
+            "Solution found!\n",
+            "A → 3\n",
+            "Runtime: 0.008 seconds\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
