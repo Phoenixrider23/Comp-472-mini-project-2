@@ -1,0 +1,66 @@
+Based on the sample data:
+
+First row horizontal always: B, C
+First row vertical always: I, J, M
+second row horizontal always: B, C
+second row vertical always:
+Third row horizontal always: B, C
+Third row vertical always:
+Fourth row horizontal always: B, C
+Fourth row vertical always:
+Fifth row horizontal always: B, C
+Fifth row vertical always:
+Sixth row horizontal always: B, C
+sixth row vertical always:
+
+PUZZLE = "............AA......................"
+PUZZLE = "............AA.................FF..."
+PUZZLE = "........I...AAI...................FF"
+PUZZLE = "..IJBBCCIJ....IAAMGDDK.MGH.KL.GHFFL."
+PUZZLE = "..I.BBCCI...AAI.M.GDDKM.GH.KL.GHFFL."
+PUZZLE = "..IJBB..IJ..AAI.M.G.DDKMG.H.KLG.HFFL"
+PUZZLE = "..IJ..CCIJ..AAI..MG.DDKMG...KLGFF..L"
+PUZZLE = "..IJBBCCIJ..AAI...G.DDK.G...KLGFF..L"
+PUZZLE = "CCIJBB..IJ.LAAI..LG.DDK.G...K.GFF..."
+PUZZLE = "...JBBCC.J.LAA...LG.DDK.G...K.GFF..."
+
+[...JBB]
+[CC.J.L]
+[AA...L]
+[G.DDK.]
+[G...K.]
+[GFF...] 
+
+PUZZLE = "BB..........AA....DD................"
+PUZZLE = "CCC..........AA................HH..."
+PUZZLE = "......DD......AA............GG....HH"
+PUZZLE = "J..CCCJDD..MJAAL.MFFKL.N..KGGN.HH..."
+PUZZLE = "JCCCBBJDD.M.JAALM.FFKL.N..K..N.HH..."
+PUZZLE = ".J..BB.J..M..JAAM.FFK..N..KGGN...HH."
+PUZZLE = ".J..BB.J...M.JAA.MFFK..NGGK..N....HH"
+PUZZLE = ".J..BB.J..M..JAAM.FFK.N.GGK.N.HH...."
+PUZZLE = "CCCBB.....M.AA..M.FF.KN.GG.KN..HH..."
+
+[CCC.BB]
+[....M.]
+[AA..M.]
+[FF.KN.]
+[GG.KN.]
+[.HH...]
+
+PUZZLE = ""
+PUZZLE = ""
+PUZZLE = ""
+PUZZLE = "..BBBMCC.DDMAAKL.MJ.KLEEJ.GG..JHHHII"
+PUZZLE = ""
+PUZZLE = ""
+PUZZLE = ""
+PUZZLE = ""
+PUZZLE = ""
+
+[..BBBM]
+[CC.DDM]
+[AAKL.M]
+[J.KLEE]
+[J.GG..]
+[JHHHII]
