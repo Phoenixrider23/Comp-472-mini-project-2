@@ -1,0 +1,47 @@
+To be considered an admissible heuristic:
+It must never overestimates the cost to the goal (ex: the estimate cost <= lowest cost)
+somewhat of a similar fashion to the astar
+
+pseudocode:
+estimate = 3 //whatever number of steps would be a realistic estimate
+step_to_goal = 0
+
+//the path that will be layout to get from the start to the goal
+def pathway(starpos, goalpos):
+
+startpos = getthestartposinthegraph
+goalpos = getthegoalnodeinthegraph
+
+openlist = []
+closelist = []
+
+openlist.push(startpos)
+
+while(openlist not empty):
+current = openlist[0]
+
+ for i in range(len(openlist)):
+   if(openlist.cost < current.cost)
+	current = openlist[i]
+ openlist.pop
+ closelist.add(current)
+ step_to_goal+=1
+
+//store the path to the goal
+if(estimate <= step_to_goal){
+
+   write(closelist)
+}
+
+//no longer an admissible heuristic
+if(Estimate > step_to_goal){
+
+   write("no solution")
+}
+
+//could get more in detail by calculating the f,h,g cost
+//as well as looking at the adjacent get their cost compare to the current
+
+def main:
+
+ pathway(startpos, goalpos)
