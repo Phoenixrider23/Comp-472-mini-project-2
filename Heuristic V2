@@ -1,0 +1,15 @@
+#Checks for the ambulance and increases priority depending on if found or not
+def heuristic(self)
+  priority = 0
+  ambulance_found = false
+  for x in range(state)                            #x goes through length of board
+    current = 3rd row, x                           #the current row will always start in row 2 as that is the only row ambulance can be
+    if current = ambulance                         #position of the ambulance on board state
+      ambulance_found = true
+    else 
+      if current not ambulance and current not "." #where "." is the empty spot on board
+      priority ++
+ return priority  
+ 
+      
+    
